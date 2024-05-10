@@ -1,19 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <time.h>
 
-typedef enum 
-{
-    EMPTY = -1,
-    I,
-    J,
-    L,
-    O,
-    S,
-    T,
-    Z
-}ShapeId;
+#define CANVAS_WIDTH 10
+#define CANVAS_HEIGHT 20
 
-typedef enum 
-{
+typedef enum {
     RED = 41,
     GREEN,
     YELLOW,
@@ -24,13 +17,39 @@ typedef enum
     BLACK = 0,
 }Color;
 
-typedef struct 
-{
+typedef enum {
+    EMPTY = -1,
+    I,
+    J,
+    L,
+    O,
+    S,
+    T,
+    Z
+}ShapeId;
+
+typedef struct {
     ShapeId shape;
     Color color;
     int size;
     char rotates[4][4][4];
 }Shape;
+
+typedef struct
+{
+    int x;
+    int y;
+    int score;
+    int rotate;
+    int fallTime;
+    ShapeId queue[4];
+}State;
+
+typedef struct {
+    Color color;
+    ShapeId shape;
+    bool current;
+}Block;
 
 Shape shapes[7] = {
     {
@@ -231,30 +250,58 @@ Shape shapes[7] = {
     },
 };
 
-int main() 
+void setBlock(Block* block, Color color, ShapeId shape, bool current)
 {
-    Color cur;
-    // ´XºØ¤è¶ô (¥Ø«e¥u¦³ I)
-    for (int i = 0; i < 7; i++) {
-        //¦L¥X¤è¶ô
-        //²Ä´X­Ó¼Ë¦¡
-        for (int r = 0; r < 4; r++) {
-            // ¤Gºû°}¦Cªº¹ïÀ³¿é¥X
-            for (int s = 0; s < shapes[i].size; s++) {
-                for (int t = 0; t < shapes[i].size; t++) {
-                    //¦pªG¬O 0 ´N¿é¥X¥Õ¦â
-                    if (shapes[i].rotates[r][s][t] == 0) {
-                        cur = WHITE;
-                    }
-                    else {
-                        cur = shapes[i].color;
-                    }
-                    printf("\033[%dm  \033[0m", cur);
-                }
-                printf("\n");
-            }
-            printf("\n");
+    block->color = color;
+    block->shape = shape;
+    block->current = current;
+}
+
+void resetBlock(Block* block)
+{
+    block->color = BLACK;
+    block->shape = EMPTY;
+    block->current = false;
+}
+
+int main() {
+    srand(time(NULL));
+    State state = {
+        .x = CANVAS_WIDTH / 2,
+        .y = 0,
+        .score = 0,
+        .rotate = 0,
+        .fallTime = 0
+    };
+
+    Block canvas[CANVAS_HEIGHT][CANVAS_WIDTH];
+    for (int i = 0; i < CANVAS_HEIGHT; i++) {
+        for (int j = 0; j < CANVAS_WIDTH; j++) {
+            resetBlock(&canvas[i][j]);
         }
     }
+
+    Shape shapeData = shapes[1];
+
+    for (int i = 0; i < shapeData.size; i++) {
+        for (int j = 0; j < shapeData.size; j++) {
+            if (shapeData.rotates[0][i][j]) {
+                setBlock(&canvas[state.y + i][state.x + j], shapeData.color, J, true);
+            }
+        }
+    }
+    //å°‡å…‰æ¨™ç§»å‹•åˆ°ç¬¬ä¸€è¡Œç¬¬ä¸€åˆ—
+    printf("\033[0;0H\n");
+    for (int i = 0; i < CANVAS_HEIGHT; i++) {
+        printf("|");
+        for (int j = 0; j < CANVAS_WIDTH; j++) {
+            printf("\033[%dm\u3000", canvas[i][j].color);
+        }
+        printf("\033[0m");
+        printf("|\n");
+    }
+
+    //printf("\e[?25l"); // hide cursor
+
     return 0;
 }
